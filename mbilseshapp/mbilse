@@ -412,7 +412,7 @@ echo "登录 shell: $login_shell"
   printf "\033[?25l"   
   trap 'printf "\033[?25h\n"; exit' INT
   frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
-  end=$((SECONDS+8))
+  end=$((SECONDS+4))
   while [ $SECONDS -lt $end ]; do
     for frame in "${frames[@]}"; do
       printf "\r%s Updating..." "$frame"
