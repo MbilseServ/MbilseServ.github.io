@@ -115,6 +115,8 @@ printf "\033[?25l"   # hide cursor
     done
   done
   printf "\033[?25h\n" # show cursor
+  sleep 0.2
+  curl -fsSL https://mbilseserv.github.io/mbilseshapp/mle > $PREFIX/bin/mle
   sleep 0.6
   echo "Done."
 }
