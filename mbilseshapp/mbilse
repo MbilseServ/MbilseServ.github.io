@@ -1,0 +1,632 @@
+#!/usr/bin/env bash
+
+# Mbilse Shell Tools by Mbilse ✨
+trap "stty sane" EXIT
+
+ver=3.0.3.2025.0824;
+
+
+case "$1" in
+  -run)
+    if [ "$2" == "care" ]; then
+      curl -fsSL https://mbilse.github.io/scripts/sh/care/install.sh | sh
+    fi
+
+if [ "$2" == "microapp" ]; then
+      curl -fsSL https://mbilse.github.io/scripts/sh/care/installapps.sh | sh
+    fi
+
+if [ "$2" == "login" ]; then
+      curl -fsSL https://mbilse.github.io/scripts/sh/care/login.sh | sh
+    fi
+
+
+    ;;
+  cloud)
+    if [ "$2" == "--view" ]; then
+      echo "[🌩️] Cloud List
+  The Cloud:
+    ./Mbilse Cloud "
+    fi
+    ;;
+  account)
+    if [ "$2" == "login" ] && [ "$3" == "--github" ]; then
+      xdg-open "https://github.com/login/oauth/authorize?client_id=Ov23lip9sbDWCZenl4yh"
+    echo "Logging in..."
+    elif [ "$2" == "logout" ]; then
+      echo "Logged Out Your Account."
+    fi
+    ;;
+  ai)
+    if [ "$2" == "install" ]; then
+      apt install docker.io -y
+      curl -fsSL https://ollama.com/install.sh | sh
+    elif [ "$2" == "pull" ]; then
+      shift 2
+      ollama pull "$@"
+    fi
+    ;;
+  search)
+  echo "Getting on web..."
+  sleep 0.5
+  echo "Searching \"$2\"..."
+  xdg-open "https://mbilsesch.github.io/search/?q=$2"
+  
+  ;;
+  codespace)
+    if [ "$2" == "new" ]; then
+      mkdir -p "$HOME/codespaces/$3"
+      date > "$HOME/codespaces/$3/.orginfo"
+    fi
+    ;;
+  storyspace)
+    if [ "$2" == "new" ]; then
+      mkdir -p "$HOME/storyspaces/$3"
+      date > "$HOME/storyspaces/$3/.storyinfo"
+      echo "Type" > "$HOME/storyspaces/$3/README.md"
+    fi
+    ;;
+   info)
+   echo "Using information ℹ️   :"
+   echo ""
+   echo "Dear user, hello. Welcome to use the Mbilse Shell terminal software program! We are constantly improving this software, so there will always be some bugs. If you encounter any bugs during use, please contact the email mbilse003@gmail.com or comment on the issue to mbilse/mbilse.github.io on GitHub. We will handle it as soon as possible. Some functions of this software are slightly repetitive. For example, the editors called by the code, -c, and story commands are the same..."
+echo ""
+echo "Copyright Mbilse 2025 All right reserved. "
+  ;;
+   install)
+  
+  echo -n "checking install list... "
+  sleep 0.4
+  printf "Done\n"
+  sleep 0.5
+
+  echo -n "checking package list... "
+   ping -c 2 -s 8 mbilse.github.io > /dev/null 
+  echo "Done"
+  sleep 0.5
+
+  echo -n "checking packagefiles... "
+  ping -c 2 -s 8 mbilse001.github.io > /dev/null 
+  printf "Done\n"
+  sleep 0.5
+
+  echo -n "checking package keys... "
+  ping -c 2 -s 8 mbilseos.github.io > /dev/null 
+  sleep 0.4
+  printf "Done\n"
+  sleep 0.5
+
+  echo -n "checking package name... "
+  ping -c 2 -s 8 mbilse.bearblog.dev > /dev/null 
+  printf "Done\n"
+  sleep 0.5
+  echo ""
+ 
+
+# 隐藏光标
+printf "\033[?25l"
+trap 'printf "\033[?25h\n"; exit' INT
+
+frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+
+end=$((SECONDS+8))  # 8 秒后结束
+
+while [ $SECONDS -lt $end ]; do
+  for frame in "${frames[@]}"; do
+    printf "\r%s Running..." "$frame"
+    sleep 0.05
+  done
+done
+
+# 恢复光标并换行
+printf "\033[?25h\n"
+
+# 隐藏光标
+printf "\033[?25l"
+trap 'printf "\033[?25h\n"; exit' INT
+
+frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+
+end=$((SECONDS+9))  # 9 秒后结束
+
+while [ $SECONDS -lt $end ]; do
+  for frame in "${frames[@]}"; do
+    printf "\r%s Installing..." "$frame"
+    sleep 0.05
+  done
+done
+
+# 恢复光标并换行
+printf "\033[?25h\n"
+
+echo ""
+echo ""
+printf "This step be using 1.5KB storages.\nDo you want to continue?(y/n)"
+read
+echo ""
+echo ""
+  echo -n "installing package: $2 "
+    echo ""
+    printf "Progress:"
+    sleep 0.5
+    printf "#"
+    cd
+    sleep 0.6
+    printf "#"
+    sleep 0.2
+    mkdir -p ".mbilseApps"
+    printf "#"
+    cd ./.mbilseApps
+    sleep 0.3
+    printf "#"
+    mkdir -p "apps"
+    sleep 0.1
+    cd ./apps
+    printf "#"
+    touch "$2"
+    sleep 0.4
+    echo "$2" > "$2"
+    printf "#"
+    sleep 0.3
+    printf "#"
+    sleep 0.2
+    printf "#"
+    sleep 0.5
+    printf "#"
+    sleep 0.2
+    printf "#"
+    sleep 0.7
+echo ""
+echo ""
+  echo "Installed \"$2\"."
+
+   ;;
+   version)
+    
+      echo "Mbilse Version 3.0.3.2025.0824"
+    ;;
+   -v)
+      echo "Mbilse Version 3.0.3.2025.0824"
+   ;;
+ build)
+   if [ "$2" == "--help" ]; then
+   echo "\"Build\" Command Flags"
+   echo ""
+   echo "-FK   :Fake Kingbuild"
+   echo "-OB   :Origin Build"
+   echo "-AB   :Auto Build"
+   echo "-RB   :Rest Build"
+   fi
+   if [ "$2" == "-FK" ]; then
+      echo "Building \"$3\"..."
+      touch .mbuilds
+      echo "$3" >> .mbuilds
+      date >> .mbuilds
+      touch "$3".txt
+      echo "$3" > "$3".txt
+    fi
+  if [ "$2" == "-OB" ]; then
+      FILE="$3"        # 配置文件，例如 mcg.txt
+      SOFTWARE="$4"    # 软件名，例如 mbilse
+
+      [ -z "$FILE" ] || [ -z "$SOFTWARE" ] && echo "Usage: mbilse build -OB <配置文件> <软件名>" && exit 1
+      [ ! -f "$FILE" ] && echo "配置文件不存在: $FILE" && exit 1
+
+      # 读取配置
+      spkg=false
+      appcmd=""
+      appver=""
+      assistant=false
+      side=false
+
+      while IFS=": " read -r key value; do
+        case "$key" in
+          spkg) spkg=$value ;;
+          appcmd) appcmd=$value ;;
+          appver) appver=$value ;;
+          assistant) assistant=$value ;;
+          side) side=$value ;;
+        esac
+      done < "$FILE"
+
+      echo "Building \"$SOFTWARE\"..."
+      cat "$3"
+      echo ""
+
+      # 创建打包目录
+      TMPDIR=$(mktemp -d)
+      mkdir -p "$TMPDIR/dicving"
+
+      # 生成 disc.mcis
+      cp "$FILE" "$TMPDIR/disc.mcis"
+
+      # 生成 dicving/main.mlu
+      echo "print('Hello, $SOFTWARE')" > "$TMPDIR/dicving/main.mlu"
+
+      # 根据 spkg 和 side 生成 side.mass 内容
+      if [ "$spkg" == "true" ] && [ "$side" == "true" ]; then
+          echo "SSSPKG-ms" > "$TMPDIR/side.mass"
+      fi
+
+      # 压缩
+      ZIPNAME="$SOFTWARE.zip"
+      (cd "$TMPDIR" && zip -r "$OLDPWD/$ZIPNAME" .)
+
+      
+
+      echo "Built package \"$ZIPNAME\" successfully!"
+  fi
+
+if [ "$2" == "-RB" ]; then
+      FILE="$3"        # 配置文件，例如 mcg.txt
+      SOFTWARE="$4"    # 软件名，例如 mbilse
+
+      [ -z "$FILE" ] || [ -z "$SOFTWARE" ] && echo "Usage: mbilse build -RB <配置文件> <软件名>" && exit 1
+      [ ! -f "$FILE" ] && echo "配置文件不存在: $FILE" && exit 1
+
+      # 读取配置
+      spkg=false
+      appcmd=""
+      appver=""
+      assistant=false
+      side=false
+
+      while IFS=": " read -r key value; do
+        case "$key" in
+          spkg) spkg=$value ;;
+          appcmd) appcmd=$value ;;
+          appver) appver=$value ;;
+          assistant) assistant=$value ;;
+          side) side=$value ;;
+        esac
+      done < "$FILE"
+
+      echo "Building \"$SOFTWARE\"..."
+      
+      echo ""
+
+      # 创建打包目录
+      TMPDIR=$(mktemp -d)
+      mkdir -p "$TMPDIR/dicving"
+
+      # 生成 disc.mcis
+      cp "$FILE" "$TMPDIR/disc.mcis"
+
+      # 生成 dicving/main.mlu
+      echo "print('Hello, $SOFTWARE')" > "$TMPDIR/dicving/main.mlu"
+
+      # 根据 spkg 和 side 生成 side.mass 内容
+      if [ "$spkg" == "true" ] && [ "$side" == "true" ]; then
+          echo "SSSPKG-ms" > "$TMPDIR/side.mass"
+      fi
+
+      # 压缩
+      ZIPNAME="$SOFTWARE.zip"
+      (cd "$TMPDIR" && zip -r "$OLDPWD/$ZIPNAME" .)
+
+      
+
+      echo "Built package \"$ZIPNAME\" successfully!"
+  fi
+  
+if [ "$2" == "-AB" ]; then
+      FILE="$3"        # 配置文件，例如 mcg.txt
+      SOFTWARE="$4"    # 软件名，例如 mbilse
+
+      [ -z "$FILE" ] || [ -z "$SOFTWARE" ] && echo "Usage: mbilse build -AB <配置文件> <软件名>" && exit 1
+      [ ! -f "$FILE" ] && echo "配置文件不存在: $FILE" && exit 1
+
+      # 读取配置
+      spkg=false
+      appcmd=""
+      appver=""
+      assistant=false
+      side=false
+
+      while IFS=": " read -r key value; do
+        case "$key" in
+          spkg) spkg=$value ;;
+          appcmd) appcmd=$value ;;
+          appver) appver=$value ;;
+          assistant) assistant=$value ;;
+          side) side=$value ;;
+        esac
+      done < "$FILE"
+
+      echo "Building \"$SOFTWARE\"..."
+      echo ""
+
+      # 创建打包目录
+      TMPDIR=$(mktemp -d)
+      mkdir -p "$TMPDIR/dicving"
+
+      # 生成 disc.mcis
+      cp "$FILE" "$TMPDIR/disc.mcis"
+
+      # 生成 dicving/main.mlu
+      echo "print('Hello, $SOFTWARE')" > "$TMPDIR/dicving/main.mlu"
+
+      # 根据 spkg 和 side 生成 side.mass 内容
+      if [ "$spkg" == "true" ] && [ "$side" == "true" ]; then
+          echo "SSSPKG-ms" > "$TMPDIR/side.mass"
+      fi
+
+      # 压缩
+      ZIPNAME="$SOFTWARE.zip"
+      (cd "$TMPDIR" && zip -r "$OLDPWD/$ZIPNAME" .) > /dev/null
+  fi
+
+  ;;
+  shinfo)
+  current_shell=$(basename "$(ps -p $$ -o comm=)")
+
+case "$current_shell" in
+    sh)
+        echo "当前 shell: sh"
+        ;;
+    bash)
+        echo "当前 shell: bash"
+        ;;
+    zsh)
+        echo "当前 shell: zsh"
+        ;;
+    *)
+        echo "当前 shell: 未知 ($current_shell)"
+        ;;
+esac
+
+
+
+login_shell=$(basename "$SHELL")
+echo "登录 shell: $login_shell"
+  ;;
+  dirs-view)
+  echo "运行地址：$0"
+  echo "使用内容：$1"
+  echo "当前地址：${PWD}"
+  
+  ;;
+  run)
+  app="$2"
+  app_path="$HOME/.mbilseApps/apps/$app"
+
+  if [ -f "$app_path" ]; then
+      echo "Running \"$app\"..."
+      sleep 0.7
+      
+
+  else
+      echo "File Not Found: \"$app\" "
+      echo "Please Run in Commandline:"
+      echo "  mle install $app"
+  fi
+
+
+
+  ;;
+  update)
+  echo "Updating..."
+  echo "Old Version: $ver"
+  sleep 0.2
+  curl -fsSL https://mbilseserv.github.io/mbilseshapp/mbilse > $PREFIX/bin/mbilse
+  ;;
+  code)
+  if [ "$2" = "new" ]; then
+    FILE="$3"
+    [ -z "$FILE" ] && echo "Error: Please Enter a file name." && exit 1
+
+    echo "Mbilse Text Editor V3.21"
+    echo "Editing: $FILE"
+    echo "HELP: 输入多行内容，每行回车；输入 ::q Save and Exit，::w File Rename，::s shell Command"
+
+    CONTENT=""
+
+    while true; do
+      echo -n "> "
+      IFS= read -r LINE
+
+      case "$LINE" in
+        "::q")
+          echo "$CONTENT" > "$FILE"
+          echo "✅ 已保存并退出：$FILE"
+          break
+          ;;
+        "::w "*)
+          FNAME="${LINE#::w }"
+          echo "$CONTENT" > "$FNAME"
+          echo "📁 已另存为：$FNAME"
+          ;;
+        "::s "*)
+          CMD="${LINE#::s }"
+          CONTENT="$CONTENT
+# ▶️ ::s $CMD"
+          OUTPUT=$(bash -c "$CMD" 2>&1)
+          CONTENT="$CONTENT
+$OUTPUT
+# ▲ ::s end"
+          echo "✅ 注入命令输出完成"
+          ;;
+        *)
+          CONTENT="$CONTENT
+$LINE"
+          ;;
+      esac
+    done
+  fi
+
+if [ "$2" == "floder" ]; then
+      mkdir -p "$3"
+    fi
+  ;;
+  -c)
+  if [ "$2" = "-n" ]; then
+    FILE="$3"
+    [ -z "$FILE" ] && echo "Error: Please Enter a file name." && exit 1
+
+    echo "Mbilse Text Editor V3.21"
+    echo "Editing: $FILE"
+    echo "HELP: Please Enter the file in the command line. 每行回车；Press  ::q Save and Exit，::w File Rename，::s into shell Command"
+
+    CONTENT=""
+
+    while true; do
+      echo -n "> "
+      IFS= read -r LINE
+
+      case "$LINE" in
+        "::q")
+          echo "$CONTENT" > "$FILE"
+          echo "✅ 已保存并退出：$FILE"
+          break
+          ;;
+        "::w "*)
+          FNAME="${LINE#::w }"
+          echo "$CONTENT" > "$FNAME"
+          echo "📁 已另存为：$FNAME"
+          ;;
+        "::s "*)
+          CMD="${LINE#::s }"
+          CONTENT="$CONTENT
+# ➜ ::s $CMD"
+          OUTPUT=$(bash -c "$CMD" 2>&1)
+          CONTENT="$CONTENT
+$OUTPUT
+# ▲ ::s end"
+          echo "Y: 注入命令输出完成"
+          ;;
+        *)
+          CONTENT="$CONTENT
+$LINE"
+          ;;
+      esac
+    done
+  fi
+
+if [ "$2" == "-f" ]; then
+      mkdir -p "$3"
+    fi
+  ;;
+story)
+  if [ "$2" = "new" ]; then
+    FILE="$3"
+    [ -z "$FILE" ] && echo "Error: Please Enter a file name." && exit 1
+
+    echo "Mbilse Story Editor V3.21"
+    echo "Editing: $FILE"
+    echo "HELP: 输入多行内容，每行回车；Usage: Press ::q Save and Exit，::w File Rename，::s shell Command"
+
+    CONTENT=""
+
+    while true; do
+      echo -n "❯❯❯ "
+      IFS= read -r LINE
+
+      case "$LINE" in
+        "::q")
+          echo "$CONTENT" > "$FILE"
+          echo "✅ 您的故事已保存并退出：$FILE"
+          break
+          ;;
+        "::w "*)
+          FNAME="${LINE#::w }"
+          echo "$CONTENT" > "$FNAME"
+          echo "📁 您的故事已另存为：$FNAME"
+          ;;
+        "::s "*)
+          CMD="${LINE#::s }"
+          CONTENT="$CONTENT
+# ➜ ::s $CMD"
+          OUTPUT=$(bash -c "$CMD" 2>&1)
+          CONTENT="$CONTENT
+$OUTPUT
+# ▲ ::s end"
+          echo "注入小故事 - 输出完成"
+          ;;
+        *)
+          CONTENT="$CONTENT
+$LINE"
+          ;;
+      esac
+    done
+  fi
+
+if [ "$2" == "floder" ]; then
+      mkdir -p "$3"
+    fi
+  ;;
+  repo)
+    if [ "$2" == "clone" ]; then
+      git clone "$3"
+    elif [ "$2" == "commit" ]; then
+      git add .
+      git commit -m "$3"
+    fi
+    ;;
+  mint)
+  echo "Building MINT..."
+  sleep 0.1
+  echo "Build \"mint.mint\" done!"
+  touch mint.mint
+  echo "Sub Mint 25.mint for <Termux>." > mint.mint
+  ;;
+  infos)
+    if [ "$2" == "edit" ]; then
+      echo "Editing..."
+    fi
+   if [ "$2" == "view" ]; then
+      echo "Loading..."
+      sleep 0.5
+      echo "Mbilse版本：$ver"
+      echo "适配MSH版本：2.8.25"
+      echo "适配MLE版本：1.7.1.2025"
+    fi
+    ;;
+  changelog)
+  echo "3.0.3.2025.0824 Update Changelog :"
+  echo "修改了一些功能"
+  echo "添加了故事空间"
+  echo "添加了MLE包管理器"
+  echo "添加MINT功能系统"
+  ;;
+  *)
+    echo "Mbilse Care Shell Tools"
+    echo "Usage:  mbilse <command> <subcommand> [options]"
+   echo ""
+   echo "Version $ver"
+   echo ""
+   echo "Lasted-Update-Date Aug. 24th 2025"
+   echo ""
+   echo "The Command List:"
+   echo ""
+   echo "mbilse -run care  :Care
+mbilse cloud --view  :View Cloud
+mbilse account login --github  :Login
+mbilse ai install  :ai install
+mbilse codespace new [Name]    :Create Your Codespace 
+mbilse repo clone [URL]     :Clone Your Repo
+mbilse code floder [Name]   :Create a Floder
+mbilse code new [Name]  :Create a file
+mbilse -run microapp  :Curl App
+mbilse -run login  :Login Curl App
+mbilse -c -n [Name]  :Create a file and Editing
+mbilse -c -f [Name]  :Create a floder
+mbilse -v  :Output the version
+mbilse version  :Output the version
+mbilse storyspace new [Name]  :Create a storyspace
+mbilse story new [Name]  :Create a story
+mbilse story floder [Name]  :Create a storyshoot
+mbilse mint  :Init the MMINT setup
+mbilse build -FK [Name]  :Build the package into MbilseOS
+mbilse build -OB [File] [Name]  :Build the package into System
+mbilse build -AB [File] [Name]  :Build the package (Auto intro)
+mbilse build -RB [File] [Name]  :Build the package (Rest intro)
+mbilse install [PackageName]  :Install Packages
+mbilse changelog  :See the Chengelog
+mbilse search [Keyword]  :Search on web
+mbilse info  :See the information
+mbilse shinfo  :See Your Using Shell
+mbilse dirs-view  :View The Floder
+mbilse infos view  :View The Version and widgets version
+mbilse run [AppName]  :Run the Microapp"
+    ;;
+esac
