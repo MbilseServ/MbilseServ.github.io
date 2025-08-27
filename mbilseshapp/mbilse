@@ -3,7 +3,7 @@
 # Mbilse Shell Tools by Mbilse ✨
 trap "stty sane" EXIT
 
-ver=3.0.3.2025.0824;
+ver=3.0.3.2025.0827;
 
 
 case "$1" in
@@ -183,10 +183,10 @@ echo ""
    ;;
    version)
     
-      echo "Mbilse Version 3.0.3.2025.0824"
+      echo "Mbilse Version 3.0.3.2025.0827"
     ;;
    -v)
-      echo "Mbilse Version 3.0.3.2025.0824"
+      echo "Mbilse Version 3.0.3.2025.0827"
    ;;
  build)
    if [ "$2" == "--help" ]; then
@@ -596,7 +596,7 @@ if [ "$2" == "floder" ]; then
     fi
     ;;
   changelog)
-  echo "3.0.3.2025.0824 Update Changelog :"
+  echo "3.0.3.2025.0827 Update Changelog :"
   echo "修改了一些功能"
   echo "添加了故事空间"
   echo "添加了MLE包管理器"
@@ -608,7 +608,7 @@ if [ "$2" == "floder" ]; then
    echo ""
    echo "Version $ver"
    echo ""
-   echo "Lasted-Update-Date Aug. 24th 2025"
+   echo "Lasted-Update-Date Aug. 27th 2025"
    echo ""
    echo "The Command List:"
    echo ""
