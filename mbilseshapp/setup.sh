@@ -7,9 +7,13 @@ echo "Install App"
 sleep 0.3
 echo ""
 printf "Do you want to continue? (y/n) "
-  read -r ans
-  if [ "$ans" != "y" ]; then
-    echo "Error Installation aborted."
-    exit 0
-  fi
- echo "OK"
+  read cont
+  case $cont in
+  y)
+    echo "OK"
+  ;;
+  *)
+    echo "No"
+  ;;
+  esac
+ 
