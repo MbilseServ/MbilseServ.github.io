@@ -21,7 +21,7 @@ case "$cont" in
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/mbilse > $PREFIX/bin/mbilse
     chmod +x $PREFIX/bin/mbilse
     ln -s $PREFIX/bin/mbilse $PREFIX/bin/m
-    ln -s $PREFIX/bin/mbilse $PREFIX/bin/mle
+    ln -s $PREFIX/bin/mbilse $PREFIX/bin/mie
     
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/mle > $PREFIX/bin/mle
     chmod +x $PREFIX/bin/mle
