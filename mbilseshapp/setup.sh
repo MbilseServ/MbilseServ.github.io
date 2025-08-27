@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-                                                      echo "Hello!"
+  
+
+
+
+echo "Hello!"
 sleep 0.2
 echo ""
 echo "Install App"
@@ -12,12 +16,19 @@ read cont < /dev/tty
 
 case "$cont" in
   y|Y|yes|YES)
-    echo "OK"
+    echo "Working..."
+    sleep 0.5
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/mbilse > $PREFIX/bin/mbilse
+    chmod +x $PREFIX/bin/mbilse
+    ln -s $PREFIX/bin/mbilse $PREFIX/bin/m
+    ln -s $PREFIX/bin/mbilse $PREFIX/bin/mle
+    
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/mle > $PREFIX/bin/mle
   ;;
   n|N|no|NO|"")
     echo "No"
   ;;
   *)
-    echo "请输入 y 或 n"
+    echo "No"
   ;;
 esac
