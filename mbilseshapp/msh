@@ -1,0 +1,74 @@
+#!/data/data/com.termux/files/usr/bin/env bash
+# msh - Mini Shell for Termux
+ver="2.8.25.0824"
+
+# 颜色定义
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+RESET="\033[0m"
+
+HOST="localhost"
+OLDPWD="$PWD"
+
+# Ctrl+C 不退出，只换行
+trap 'printf "\n"' INT
+
+# 历史和 Tab 补全
+HISTFILE="$HOME/.msh_history"
+HISTSIZE=1000
+SAVEHIST=1000
+shopt -s histappend
+
+# 显示版本
+if [[ "$1" == "-v" || "$1" == "--version" ]]; then
+    echo "MSH Version $ver"
+    exit 0
+fi
+
+# 主循环
+while true; do
+    # 构建路径显示
+    path="$PWD"
+    [[ "$PWD" == "$HOME"* ]] && path="~${PWD#$HOME}"
+
+    # 使用 read -e -p 提示符，readline 自己管理光标
+    IFS= read -e -r -p "$(printf "${GREEN}[%s]${RESET} ${YELLOW}%s${RESET} > " "$HOST" "$path")" line || break
+    [[ -z "$line" ]] && continue
+
+    # 保存历史
+    history -s "$line"
+    history -a
+
+    # 分离命令与参数
+    cmd="${line%%[[:space:]]*}"
+    rest="${line#"$cmd"}"
+    rest="${rest#"${rest%%[![:space:]]*}"}"
+
+    case "$cmd" in
+        exit|quit)
+            exit 0
+            ;;
+
+        cd)
+            target="$rest"
+            [[ -z "$target" ]] && target="$HOME"
+            if [[ "$target" == "-" ]]; then
+                target="$OLDPWD"
+            fi
+            if [[ -d "$target" ]]; then
+                OLDPWD="$PWD"
+                cd -- "$target"
+            else
+                echo "MSH: E: Command not found"
+            fi
+            ;;
+
+        *)
+            if command -v "$cmd" >/dev/null 2>&1; then
+                "$cmd" $rest
+            else
+                echo "MSH: E: Command not found"
+            fi
+            ;;
+    esac
+done
