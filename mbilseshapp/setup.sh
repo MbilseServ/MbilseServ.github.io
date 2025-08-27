@@ -27,12 +27,12 @@ case "$cont" in
     chmod +x $PREFIX/bin/mle
 
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/msh > $PREFIX/bin/msh
-    chmod +x $PREFIX/bin/mle
+    chmod +x $PREFIX/bin/msh
   ;;
   n|N|no|NO|"")
-    echo "Install"
+    echo "Install Failed UserCanceled."
   ;;
   *)
-    echo "Error"
+    echo "Error Failed."
   ;;
 esac
