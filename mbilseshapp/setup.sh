@@ -24,11 +24,15 @@ case "$cont" in
     ln -s $PREFIX/bin/mbilse $PREFIX/bin/mle
     
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/mle > $PREFIX/bin/mle
+    chmod +x $PREFIX/bin/mle
+
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/msh > $PREFIX/bin/msh
+    chmod +x $PREFIX/bin/mle
   ;;
   n|N|no|NO|"")
-    echo "No"
+    echo "Install"
   ;;
   *)
-    echo "No"
+    echo "Error"
   ;;
 esac
