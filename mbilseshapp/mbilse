@@ -687,7 +687,7 @@ mbilse run [AppName]  :Run the Microapp
 mbilse update  :Update the Mbilse Apps"
    ;;
   *)
-  echo "Error: No Command \"$1 \""
+  echo "Error: No Command \"$1\""
   echo "See \"mbilse --help\" to see the information."
   ;;
 esac
