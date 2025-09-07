@@ -602,7 +602,7 @@ if [ "$2" == "floder" ]; then
   echo "添加了MLE包管理器"
   echo "添加MINT功能系统"
   ;;
-  *)
+  --help)
     echo "Mbilse Care Shell Tools"
     echo "Usage:  mbilse <command> <subcommand> [options]"
    echo ""
@@ -644,4 +644,50 @@ mbilse infos view  :View The Version and widgets version
 mbilse run [AppName]  :Run the Microapp
 mbilse update  :Update the Mbilse Apps"
     ;;
+   "")
+   echo "Mbilse Care Shell Tools"
+    echo "Usage:  mbilse <command> <subcommand> [options]"
+   echo ""
+   echo "Version $ver"
+   echo ""
+   echo "Lasted-Update-Date Aug. 27th 2025"
+   echo ""
+   echo "The Command List:"
+   echo ""
+   echo "mbilse -run care  :Care
+mbilse cloud --view  :View Cloud
+mbilse account login --github  :Login
+mbilse ai install  :ai install
+mbilse codespace new [Name]    :Create Your Codespace 
+mbilse repo clone [URL]     :Clone Your Repo
+mbilse code floder [Name]   :Create a Floder
+mbilse code new [Name]  :Create a file
+mbilse -run microapp  :Curl App
+mbilse -run login  :Login Curl App
+mbilse -c -n [Name]  :Create a file and Editing
+mbilse -c -f [Name]  :Create a floder
+mbilse -v  :Output the version
+mbilse version  :Output the version
+mbilse storyspace new [Name]  :Create a storyspace
+mbilse story new [Name]  :Create a story
+mbilse story floder [Name]  :Create a storyshoot
+mbilse mint  :Init the MMINT setup
+mbilse build -FK [Name]  :Build the package into MbilseOS
+mbilse build -OB [File] [Name]  :Build the package into System
+mbilse build -AB [File] [Name]  :Build the package (Auto intro)
+mbilse build -RB [File] [Name]  :Build the package (Rest intro)
+mbilse install [PackageName]  :Install Packages
+mbilse changelog  :See the Chengelog
+mbilse search [Keyword]  :Search on web
+mbilse info  :See the information
+mbilse shinfo  :See Your Using Shell
+mbilse dirs-view  :View The Floder
+mbilse infos view  :View The Version and widgets version
+mbilse run [AppName]  :Run the Microapp
+mbilse update  :Update the Mbilse Apps"
+   ;;
+  *)
+  echo "Error: No Command \"$1 \""
+  echo "See \"mbilse --help\" to see the information."
+  ;;
 esac
