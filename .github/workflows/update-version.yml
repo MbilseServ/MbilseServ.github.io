@@ -3,7 +3,7 @@ name: Update version.txt
 on:
   push:
     paths:
-      - "/mbilseshapp/mbilse"   # 只监听这个文件变化
+      - "mbilseshapp/mbilse"   # 只监听这个文件变化
 
 jobs:
   update-version:
