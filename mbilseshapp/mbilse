@@ -3,7 +3,7 @@
 # Mbilse Shell Tools by Mbilse ✨
 trap "stty sane" EXIT
 
-ver=3.0.4.2025.0827.1;
+ver=3.0.4.2025.0827;
 
 
 case "$1" in
