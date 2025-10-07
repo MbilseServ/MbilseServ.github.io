@@ -29,6 +29,10 @@ if [[ "$1" == "-run" || "$1" == "run" ]]; then
     sh $2
     exit 0
 fi
+if [[ "$1" == "update" || "$1" == "upgrade" ]]; then
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/msh > $PREFIX/bin/msh
+    exit 0
+fi
 
 # 主循环
 while true; do
