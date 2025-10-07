@@ -206,6 +206,7 @@ printf "\033[?25l"   # hide cursor
 
 case "$1" in
   install) install_app "$2" ;;
+  autoremove) uninstall_app "$2" ;;
   update)  update_lib ;;
   -v)
 echo "MLE Version $ver"
