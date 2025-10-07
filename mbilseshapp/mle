@@ -3,7 +3,7 @@
 # mle - package manager by Mbilse
 
 APP_DIR="$HOME/.mbilseApps/apps"
-ver=1.7.1.2025.0820;
+ver=1.7.1.2025.1007;
 
 install_app() {
   local app_name="$1"
@@ -86,6 +86,89 @@ install_app() {
   echo ""
   echo "Installed \"$app_name\"."
 }
+
+uninstall_app() {
+  local app_name="$1"
+  if [ -z "$app_name" ]; then
+    echo "Error: Please provide an app name."
+    echo "   Usage: mle autoremove <app-name>"
+    exit 1
+  fi
+
+  # Step 1: checking
+  echo -n "checking install list... "; sleep 0.4; printf "Done\n"; sleep 0.5
+  echo -n "checking package list... "; ping -c 2 -s 8 mbilse.github.io > /dev/null; echo "Done"; sleep 0.5
+  echo -n "checking packagefiles... "; ping -c 2 -s 8 mbilse001.github.io > /dev/null; printf "Done\n"; sleep 0.5
+  echo -n "checking package keys... "; ping -c 2 -s 8 mbilseos.github.io > /dev/null; sleep 0.4; printf "Done\n"; sleep 0.5
+  echo -n "checking package name... "; ping -c 2 -s 8 mbilse.bearblog.dev > /dev/null; printf "Done\n"; sleep 0.5
+  echo ""
+
+  # Step 2: spinner (Running...)
+  printf "\033[?25l"   # hide cursor
+  trap 'printf "\033[?25h\n"; exit' INT
+  frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+  end=$((SECONDS+8))
+  while [ $SECONDS -lt $end ]; do
+    for frame in "${frames[@]}"; do
+      printf "\r%s Running..." "$frame"
+      sleep 0.05
+    done
+  done
+  printf "\033[?25h\n" # show cursor
+
+  # Step 3: spinner (Installing...)
+  printf "\033[?25l"
+  trap 'printf "\033[?25h\n"; exit' INT
+  end=$((SECONDS+9))
+  while [ $SECONDS -lt $end ]; do
+    for frame in "${frames[@]}"; do
+      printf "\r%s Uninstalling..." "$frame"
+      sleep 0.05
+    done
+  done
+  printf "\033[?25h\n"
+
+  
+
+  echo ""
+  echo "Your drivice will 1.5KB storage be free up."
+  printf "Do you want to continue? (y/n) "
+  read -r ans
+  if [ "$ans" != "y" ]; then
+    echo "Error Installation aborted."
+    exit 0
+  fi
+  echo ""
+
+  # Step 4: progress bar with fake file actions
+  echo -n "removing package: $app_name"
+  echo ""
+  printf "Progress:"
+  sleep 0.5; printf "#"
+  cd || exit
+  sleep 0.6; printf "#"
+  sleep 0.2; mkdir -p ".mbilseApps"
+  printf "#"
+  cd ./.mbilseApps || exit
+  sleep 0.3; printf "#"
+  mkdir -p "apps"
+  sleep 0.1
+  cd ./apps || exit
+  printf "#"
+  rm "$app_name"
+  sleep 0.4
+  
+  printf "#"
+  sleep 0.3; printf "#"
+  sleep 0.2; printf "#"
+  sleep 0.5; printf "#"
+  sleep 0.2; printf "#"
+  sleep 0.7
+  echo ""
+  echo ""
+  echo "Uninstalled \"$app_name\"."
+}
+
 
 update_lib() {
   echo -n "Updating mle app library... "
