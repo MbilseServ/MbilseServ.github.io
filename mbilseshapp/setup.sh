@@ -22,12 +22,22 @@ case "$cont" in
     chmod +x $PREFIX/bin/mbilse
     ln -s $PREFIX/bin/mbilse $PREFIX/bin/m
     ln -s $PREFIX/bin/mbilse $PREFIX/bin/mie
+    ln -s $PREFIX/bin/mbilse $PREFIX/bin/Mbilse
+    ln -s $PREFIX/bin/mbilse $PREFIX/bin/MBILSE
+
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/imgzip > $PREFIX/bin/imgzip
+    chmod +x $PREFIX/bin/imgzip
+
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/askai > $PREFIX/bin/askai
+    chmod +x $PREFIX/bin/askai
     
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/mle > $PREFIX/bin/mle
     chmod +x $PREFIX/bin/mle
 
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/msh > $PREFIX/bin/msh
     chmod +x $PREFIX/bin/msh
+
+    echo "OKay."
   ;;
   n|N|no|NO|"")
     echo "Install Failed UserCanceled."
