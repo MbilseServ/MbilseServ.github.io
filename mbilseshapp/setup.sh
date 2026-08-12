@@ -32,6 +32,9 @@ case "$cont" in
     echo "askai要被安装..."
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/askai > $PREFIX/bin/askai
     chmod +x $PREFIX/bin/askai
+    echo "WebDrop要被安装..."
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/webdrop > $PREFIX/bin/webdrop
+    chmod +x $PREFIX/bin/webdrop
     echo "软件包管理MLE要被安装..."
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/mle > $PREFIX/bin/mle
     chmod +x $PREFIX/bin/mle
