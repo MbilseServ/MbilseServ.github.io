@@ -44,8 +44,11 @@ case "$cont" in
     echo "dater要被安装..."
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/dater > $PREFIX/bin/dater
     chmod +x $PREFIX/bin/dater
+    echo "DotDrop要被安装..."
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/dotdrop > $PREFIX/bin/dotdrop
+    chmod +x $PREFIX/bin/dotdrop
 
-    echo "OKay."
+    echo "All OKay."
   ;;
   n|N|no|NO|"")
     echo "Install Failed UserCanceled."
