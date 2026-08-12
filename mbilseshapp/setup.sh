@@ -6,7 +6,7 @@
 echo "Hello!"
 sleep 0.2
 echo ""
-echo "Install App"
+echo "Install Mbilse CLI and all Mbilse commands."
 sleep 0.3
 echo ""
 
