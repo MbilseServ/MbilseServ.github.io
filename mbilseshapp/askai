@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+
+API_URL="https://oiapi.net/api/BigModel"
+DATA_DIR="$HOME/.askai"
+CONFIG_FILE="$DATA_DIR/config.json"
+HISTORY_FILE="$DATA_DIR/history.json"
+SESSION_FILE="$DATA_DIR/session"
+
+SYSTEM_PROMPT="你叫 Mbilse Copilot，也可以叫Mbilse Copilot AI，默认回答语言：英文，只有客户问你其他语言，你才可以用其他语言回复，你的回答可以不那么简洁，可以幽默，版本是：4.12 正式版"
+
+mkdir -p "$DATA_DIR"
+
+# ===== 打字机效果 =====
+typewriter() {
+  text="$1"
+  for ((i=0; i<${#text}; i++)); do
+    printf "%s" "${text:$i:1}"
+    sleep 0.001
+  done
+  echo
+}
+
+# ===== 初始化用户 =====
+init_user() {
+  if [ ! -f "$CONFIG_FILE" ]; then
+    echo "First, Please Enter a username:"
+    read -r USERNAME
+    USER_ID="${USERNAME}_$(tr -dc a-z0-9 </dev/urandom | head -c6)"
+    jq -n \
+      --arg u "$USERNAME" \
+      --arg id "$USER_ID" \
+      '{username:$u,id:$id}' > "$CONFIG_FILE"
+    echo "Completed creating user:"
+    echo "Username: $USERNAME"
+    echo "User ID: $USER_ID"
+  fi
+}
+
+get_username() {
+  jq -r '.username' "$CONFIG_FILE"
+}
+
+get_userid() {
+  jq -r '.id' "$CONFIG_FILE"
+}
+
+# ===== API 调用 =====
+call_api() {
+  local MSG="$1"
+  local SESSION_ID="$2"
+
+  curl -s -X POST "$API_URL" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n \
+      --arg m "$MSG" \
+      --arg id "$SESSION_ID" \
+      --arg sys "$SYSTEM_PROMPT" \
+      '{message:$m,id:$id,system:$sys}')"
+}
+
+extract_answer() {
+  echo "$1" | jq -r '.data[] | select(.role=="assistant") | .content' | tail -n1
+}
+
+# ===== 历史保存 =====
+save_history() {
+  TITLE="$1"
+  QUESTION="$2"
+  ANSWER="$3"
+
+  jq -n \
+    --arg time "$(date '+%F %T')" \
+    --arg title "$TITLE" \
+    --arg q "$QUESTION" \
+    --arg a "$ANSWER" \
+    '{time:$time,title:$title,question:$q,answer:$a}' >> "$HISTORY_FILE"
+}
+
+show_history() {
+  [ ! -f "$HISTORY_FILE" ] && echo "No history yet." && exit 0
+  jq -r '"\(.time) | \(.title)\nQ: \(.question)\nA: \(.answer)\n"' "$HISTORY_FILE"
+}
+
+clear_history() {
+  rm -f "$HISTORY_FILE" "$SESSION_FILE"
+  echo "History file cleaned."
+}
+
+logout_user() {
+  rm -f "$CONFIG_FILE" "$SESSION_FILE"
+  echo "已退出登录"
+  echo "下次使用将重新创建用户"
+}
+
+switch_session() {
+  echo "请输入新的会话ID (留空自动生成):"
+  read -r NEW_SESSION
+
+  if [ -z "$NEW_SESSION" ]; then
+    NEW_SESSION="session_$(tr -dc a-z0-9 </dev/urandom | head -c8)"
+    echo "已生成新会话ID: $NEW_SESSION"
+  fi
+
+  echo "$NEW_SESSION" > "$SESSION_FILE"
+  echo "会话已切换"
+}
+
+# ===== 长对话模式 =====
+ask_large() {
+  USERNAME=$(get_username)
+
+  SESSION_ID=""
+  [ -f "$SESSION_FILE" ] && SESSION_ID=$(cat "$SESSION_FILE")
+
+  TITLE="$1"
+
+  RESP=$(call_api "$1" "$SESSION_ID")
+  ANSWER=$(extract_answer "$RESP")
+
+  NEW_ID=$(echo "$RESP" | jq -r '.data[0].id // empty')
+  [ -n "$NEW_ID" ] && echo "$NEW_ID" > "$SESSION_FILE"
+
+  echo
+  printf "AI: "
+  typewriter "$ANSWER"
+
+  save_history "$TITLE" "$1" "$ANSWER"
+
+  while true; do
+    echo
+    read -r -p "Ask your question (Ctrl+C to exit)
+$USERNAME > " NEXT
+    [ -z "$NEXT" ] && continue
+
+    SESSION_ID=$(cat "$SESSION_FILE" 2>/dev/null)
+
+    RESP=$(call_api "$NEXT" "$SESSION_ID")
+    ANSWER=$(extract_answer "$RESP")
+
+    NEW_ID=$(echo "$RESP" | jq -r '.data[0].id // empty')
+    [ -n "$NEW_ID" ] && echo "$NEW_ID" > "$SESSION_FILE"
+
+    echo
+    printf "AI: "
+    typewriter "$ANSWER"
+
+    save_history "$TITLE" "$NEXT" "$ANSWER"
+  done
+}
+
+ask_normal() {
+  RESP=$(call_api "$1" "")
+  ANSWER=$(extract_answer "$RESP")
+
+  echo
+  printf "AI: "
+  typewriter "$ANSWER"
+
+  save_history "normal" "$1" "$ANSWER"
+}
+
+# ===== 参数解析 =====
+MODE=""
+CLEAR=0
+QUESTION=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -n|--normal)
+      MODE="normal"
+      QUESTION="$2"
+      shift 2
+      ;;
+    -lc|--largecoversation)
+      MODE="large"
+      QUESTION="$2"
+      shift 2
+      ;;
+    -h|--history)
+      MODE="history"
+      shift
+      ;;
+    -c|--clear)
+      CLEAR=1
+      shift
+      ;;
+    -lo|--logout)
+      MODE="logout"
+      shift
+      ;;
+    -ss|--switch)
+      MODE="switch"
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+init_user
+
+case "$MODE" in
+  normal)
+    ask_normal "$QUESTION"
+    ;;
+  large)
+    ask_large "$QUESTION"
+    ;;
+  history)
+    [ $CLEAR -eq 1 ] && clear_history || show_history
+    ;;
+  logout)
+    logout_user
+    ;;
+  switch)
+    switch_session
+    ;;
+  *)
+    echo "askai -n \"问题\""
+    echo "askai -lc \"问题\""
+    echo "askai -h"
+    echo "askai -h -c"
+    ;;
+esac

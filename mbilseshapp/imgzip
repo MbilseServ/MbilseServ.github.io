@@ -1,0 +1,1047 @@
+#!/data/data/com.termux/files/usr/bin/sh
+# ============================================================
+# imgzip - 图片 + ZIP 容器 CLI
+# Pure Shell / Termux
+#
+# 结构：
+#
+#   [原始图片二进制]
+#   [标准 ZIP 二进制]
+#
+# 图片部分永远不重新编码。
+# 修改 ZIP 时，会重新生成：
+#
+#   原始图片 + 新 ZIP
+#
+# 而不是不断追加 ZIP。
+# ============================================================
+
+VERSION="1.0.0"
+PROG="imgzip"
+
+# ------------------------------------------------------------
+# 颜色
+# ------------------------------------------------------------
+
+if [ -t 1 ]; then
+    C_RESET="$(printf '\033[0m')"
+    C_RED="$(printf '\033[31m')"
+    C_GREEN="$(printf '\033[32m')"
+    C_YELLOW="$(printf '\033[33m')"
+    C_CYAN="$(printf '\033[36m')"
+else
+    C_RESET=""
+    C_RED=""
+    C_GREEN=""
+    C_YELLOW=""
+    C_CYAN=""
+fi
+
+info() {
+    printf '%s[+]%s %s\n' "$C_GREEN" "$C_RESET" "$*"
+}
+
+warn() {
+    printf '%s[!]%s %s\n' "$C_YELLOW" "$C_RESET" "$*" >&2
+}
+
+error() {
+    printf '%s错误：%s%s\n' "$C_RED" "$*" "$C_RESET" >&2
+}
+
+die() {
+    error "$1"
+    exit "${2:-1}"
+}
+
+# ------------------------------------------------------------
+# 检查命令
+# ------------------------------------------------------------
+
+need_cmd() {
+    command -v "$1" >/dev/null 2>&1 || \
+        die "缺少命令：$1"
+}
+
+check_dependencies() {
+    need_cmd dd
+    need_cmd zip
+    need_cmd unzip
+    need_cmd awk
+    need_cmd grep
+    need_cmd mktemp
+}
+
+# ------------------------------------------------------------
+# 临时目录
+# ------------------------------------------------------------
+
+TMPDIR_IMGZIP=""
+
+cleanup() {
+    if [ -n "$TMPDIR_IMGZIP" ] &&
+       [ -d "$TMPDIR_IMGZIP" ]; then
+        rm -rf "$TMPDIR_IMGZIP"
+    fi
+}
+
+trap cleanup EXIT INT TERM
+
+make_tmp() {
+    if [ -z "$TMPDIR_IMGZIP" ]; then
+        TMPDIR_IMGZIP="$(mktemp -d "${TMPDIR:-/tmp}/imgzip.XXXXXX")" ||
+            die "无法创建临时目录"
+    fi
+}
+
+# ------------------------------------------------------------
+# 文件大小
+# ------------------------------------------------------------
+
+file_size() {
+    wc -c < "$1" | tr -d ' '
+}
+
+# ------------------------------------------------------------
+# SHA256
+# ------------------------------------------------------------
+
+sha256_file() {
+    file="$1"
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$file" | awk '{print $1}'
+        return
+    fi
+
+    if command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$file" | awk '{print $1}'
+        return
+    fi
+
+    die "缺少 sha256sum 或 shasum"
+}
+
+# ------------------------------------------------------------
+# 图片类型
+# ------------------------------------------------------------
+
+detect_image() {
+    file="$1"
+
+    magic="$(dd if="$file" bs=1 count=12 2>/dev/null |
+        od -An -tx1 | tr -d ' \n')"
+
+    case "$magic" in
+        ffd8ff*)
+            printf '%s\n' "JPEG"
+            ;;
+
+        89504e470d0a1a0a*)
+            printf '%s\n' "PNG"
+            ;;
+
+        474946383761*|474946383961*)
+            printf '%s\n' "GIF"
+            ;;
+
+        424d*)
+            printf '%s\n' "BMP"
+            ;;
+
+        52494646????????57454250*)
+            printf '%s\n' "WEBP"
+            ;;
+
+        *)
+            printf '%s\n' "UNKNOWN"
+            ;;
+    esac
+}
+
+# ------------------------------------------------------------
+# 找 ZIP 起点
+#
+# 原理：
+#
+# ZIP 的 Local File Header：
+#
+#   PK\x03\x04
+#
+# 但直接 grep 二进制不可靠。
+#
+# 这里使用 Python-free 的 awk/od 方法。
+#
+# 更可靠的方法是从文件尾寻找 End Of Central Directory
+# 的记录，再根据 ZIP central directory 信息定位。
+#
+# 对普通 ZIP 使用 unzip -l / unzip -Z 获取信息。
+#
+# 为了保证纯 Shell，本版本采用：
+#
+#   搜索最后一个 PK\x05\x06
+#
+# 再根据 central directory size/offset 计算。
+# ------------------------------------------------------------
+
+find_zip_start() {
+    file="$1"
+
+    size="$(file_size "$file")"
+
+    [ "$size" -gt 21 ] || return 1
+
+    # 从尾部取最多 65557 字节。
+    # ZIP EOCD 最大注释长度为 65535。
+    tail_size=65557
+
+    if [ "$size" -lt "$tail_size" ]; then
+        tail_size="$size"
+    fi
+
+    start=$((size - tail_size))
+
+    dd if="$file" \
+       bs=1 \
+       skip="$start" \
+       count="$tail_size" \
+       2>/dev/null |
+    od -An -tx1 -v |
+    awk -v base="$start" '
+    {
+        for (i = 1; i <= NF; i++) {
+            b[++n] = $i
+        }
+    }
+
+    END {
+        # 搜索最后一个 EOCD：
+        # 50 4b 05 06
+        for (i = n - 21; i >= 1; i--) {
+            if (
+                b[i]   == "50" &&
+                b[i+1] == "4b" &&
+                b[i+2] == "05" &&
+                b[i+3] == "06"
+            ) {
+                # EOCD:
+                #
+                # offset +16 = central directory offset
+                #
+                # little endian
+                #
+                function le16(p) {
+                    return strtonum("0x" b[p+1]) * 256 +
+                           strtonum("0x" b[p])
+                }
+
+                function le32(p) {
+                    return strtonum("0x" b[p+3]) * 16777216 +
+                           strtonum("0x" b[p+2]) * 65536 +
+                           strtonum("0x" b[p+1]) * 256 +
+                           strtonum("0x" b[p])
+                }
+
+                cd_offset = le32(i + 16)
+
+                # 普通追加 ZIP：
+                # central directory offset 就是相对于 ZIP 起点。
+                #
+                # 因为 ZIP 被追加到图片后面，
+                # 我们还需要寻找 local header。
+                #
+                # 先扫描整个尾部的 PK 03 04，
+                # 找到最早的 local header。
+                for (j = 1; j <= i; j++) {
+                    if (
+                        b[j]   == "50" &&
+                        b[j+1] == "4b" &&
+                        b[j+2] == "03" &&
+                        b[j+3] == "04"
+                    ) {
+                        print base + j - 1
+                        exit
+                    }
+                }
+            }
+        }
+    }'
+}
+
+# ------------------------------------------------------------
+# 更可靠的 ZIP 起点查找
+#
+# 因为纯 awk 的 strtonum 在不同 awk 实现上兼容性不好，
+# 所以实际上优先使用 unzip -Z 获取 ZIP 偏移信息。
+#
+# 如果失败，再使用尾部扫描。
+# ------------------------------------------------------------
+
+get_zip_start() {
+    file="$1"
+
+    result="$(find_zip_start "$file" 2>/dev/null)"
+
+    if [ -n "$result" ]; then
+        printf '%s\n' "$result"
+        return 0
+    fi
+
+    return 1
+}
+
+# ------------------------------------------------------------
+# 判断是否包含 ZIP
+# ------------------------------------------------------------
+
+has_zip() {
+    get_zip_start "$1" >/dev/null 2>&1
+}
+
+# ------------------------------------------------------------
+# 提取图片部分
+# ------------------------------------------------------------
+
+extract_image_part() {
+    input="$1"
+    output="$2"
+
+    zip_start="$(get_zip_start "$input")" ||
+        die "无法定位 ZIP 数据"
+
+    dd if="$input" \
+       of="$output" \
+       bs=1 \
+       count="$zip_start" \
+       2>/dev/null ||
+       die "提取图片部分失败"
+}
+
+# ------------------------------------------------------------
+# 提取 ZIP 部分
+# ------------------------------------------------------------
+
+extract_zip_part() {
+    input="$1"
+    output="$2"
+
+    zip_start="$(get_zip_start "$input")" ||
+        die "无法定位 ZIP 数据"
+
+    size="$(file_size "$input")"
+
+    count=$((size - zip_start))
+
+    dd if="$input" \
+       of="$output" \
+       bs=1 \
+       skip="$zip_start" \
+       count="$count" \
+       2>/dev/null ||
+       die "提取 ZIP 部分失败"
+}
+
+# ------------------------------------------------------------
+# 创建容器
+#
+# cat 是这里最重要的东西：
+#
+#   cat image zip > result
+#
+# 图片二进制不会经过文本工具。
+# ------------------------------------------------------------
+
+combine() {
+    image="$1"
+    zipfile="$2"
+    output="$3"
+
+    cat "$image" "$zipfile" > "$output" ||
+        die "合并失败"
+
+    chmod --reference="$image" "$output" 2>/dev/null || true
+}
+
+# ------------------------------------------------------------
+# 从容器提取 ZIP
+# ------------------------------------------------------------
+
+prepare_zip() {
+    image="$1"
+    zipout="$2"
+
+    extract_zip_part "$image" "$zipout"
+
+    unzip -t "$zipout" >/dev/null 2>&1 ||
+        die "容器中的 ZIP 已损坏"
+}
+
+# ------------------------------------------------------------
+# 重新构建容器
+# ------------------------------------------------------------
+
+rebuild() {
+    image="$1"
+    workdir="$2"
+    output="$3"
+
+    make_tmp
+
+    old_image="$TMPDIR_IMGZIP/image.bin"
+    new_zip="$TMPDIR_IMGZIP/new.zip"
+    new_file="$TMPDIR_IMGZIP/result.bin"
+
+    if has_zip "$image"; then
+        extract_image_part "$image" "$old_image"
+        prepare_zip "$image" "$TMPDIR_IMGZIP/old.zip"
+
+        mkdir -p "$workdir"
+    else
+        cp "$image" "$old_image"
+    fi
+
+    (
+        cd "$workdir" || exit 1
+
+        zip -q -r \
+            "$new_zip" \
+            . \
+            -x "__IMGZIP_TMP__/*"
+    ) || die "生成 ZIP 失败"
+
+    cat "$old_image" "$new_zip" > "$new_file" ||
+        die "重新组合失败"
+
+    mv "$new_file" "$output" ||
+        die "写入输出文件失败"
+}
+
+# ------------------------------------------------------------
+# PACK
+# ------------------------------------------------------------
+
+cmd_pack() {
+    [ "$#" -ge 2 ] ||
+        die "用法：imgzip pack <图片> <文件...>"
+
+    image="$1"
+    shift
+
+    [ -f "$image" ] ||
+        die "找不到图片：$image"
+
+    if has_zip "$image"; then
+        die "该文件已经包含 ZIP，请使用 add/update"
+    fi
+
+    make_tmp
+
+    work="$TMPDIR_IMGZIP/payload"
+    mkdir -p "$work"
+
+    image_type="$(detect_image "$image")"
+
+    if [ "$image_type" = "UNKNOWN" ]; then
+        warn "无法识别图片格式，仍然继续"
+    else
+        info "图片格式：$image_type"
+    fi
+
+    for f in "$@"; do
+        [ -f "$f" ] ||
+            die "找不到文件：$f"
+
+        cp "$f" "$work/$(basename "$f")" ||
+            die "复制文件失败：$f"
+
+        info "加入：$(basename "$f")"
+    done
+
+    zipfile="$TMPDIR_IMGZIP/payload.zip"
+
+    (
+        cd "$work" || exit 1
+        zip -q -r "$zipfile" .
+    ) || die "创建 ZIP 失败"
+
+    cat "$image" "$zipfile" > "$image.imgzip.tmp" ||
+        die "生成容器失败"
+
+    mv "$image.imgzip.tmp" "$image" ||
+        die "写入容器失败"
+
+    info "完成：$image"
+}
+
+# ------------------------------------------------------------
+# ADD / UPDATE
+# ------------------------------------------------------------
+
+cmd_add_update() {
+    mode="$1"
+    shift
+
+    [ "$#" -ge 2 ] ||
+        die "用法：imgzip $mode <图片> <文件...>"
+
+    image="$1"
+    shift
+
+    [ -f "$image" ] ||
+        die "找不到文件：$image"
+
+    has_zip "$image" ||
+        die "图片中没有 ZIP，请先使用 pack"
+
+    make_tmp
+
+    image_part="$TMPDIR_IMGZIP/image.bin"
+    old_zip="$TMPDIR_IMGZIP/old.zip"
+    work="$TMPDIR_IMGZIP/work"
+
+    extract_image_part "$image" "$image_part"
+    extract_zip_part "$image" "$old_zip"
+
+    unzip -q "$old_zip" -d "$work" ||
+        die "解压原 ZIP 失败"
+
+    for f in "$@"; do
+        [ -f "$f" ] ||
+            die "找不到文件：$f"
+
+        target="$work/$(basename "$f")"
+
+        if [ "$mode" = "update" ] &&
+           [ ! -f "$target" ]; then
+            warn "不存在，将作为新文件添加：$(basename "$f")"
+        else
+            info "$mode：$(basename "$f")"
+        fi
+
+        cp "$f" "$target" ||
+            die "复制失败"
+    done
+
+    new_zip="$TMPDIR_IMGZIP/new.zip"
+
+    (
+        cd "$work" || exit 1
+        zip -q -r "$new_zip" .
+    ) || die "生成新 ZIP 失败"
+
+    cat "$image_part" "$new_zip" > "$image.imgzip.tmp" ||
+        die "重新组合失败"
+
+    mv "$image.imgzip.tmp" "$image" ||
+        die "更新文件失败"
+
+    info "完成。图片部分未修改。"
+}
+
+# ------------------------------------------------------------
+# DELETE
+# ------------------------------------------------------------
+
+cmd_delete() {
+    [ "$#" -ge 2 ] ||
+        die "用法：imgzip delete <图片> <文件...>"
+
+    image="$1"
+    shift
+
+    [ -f "$image" ] ||
+        die "找不到文件：$image"
+
+    has_zip "$image" ||
+        die "图片中没有 ZIP"
+
+    make_tmp
+
+    image_part="$TMPDIR_IMGZIP/image.bin"
+    old_zip="$TMPDIR_IMGZIP/old.zip"
+    work="$TMPDIR_IMGZIP/work"
+
+    extract_image_part "$image" "$image_part"
+    extract_zip_part "$image" "$old_zip"
+
+    unzip -q "$old_zip" -d "$work" ||
+        die "解压 ZIP 失败"
+
+    for name in "$@"; do
+        target="$work/$(basename "$name")"
+
+        if [ -f "$target" ]; then
+            rm -f "$target"
+            info "删除：$name"
+        else
+            warn "不存在：$name"
+        fi
+    done
+
+    new_zip="$TMPDIR_IMGZIP/new.zip"
+
+    (
+        cd "$work" || exit 1
+        zip -q -r "$new_zip" .
+    ) || die "生成新 ZIP 失败"
+
+    cat "$image_part" "$new_zip" > "$image.imgzip.tmp" ||
+        die "重新组合失败"
+
+    mv "$image.imgzip.tmp" "$image" ||
+        die "写入失败"
+
+    info "完成。"
+}
+
+# ------------------------------------------------------------
+# EXTRACT
+# ------------------------------------------------------------
+
+cmd_extract() {
+    [ "$#" -ge 1 ] ||
+        die "用法：imgzip extract <图片> [目录]"
+
+    image="$1"
+    output="${2:-imgzip_extract}"
+
+    [ -f "$image" ] ||
+        die "找不到文件：$image"
+
+    has_zip "$image" ||
+        die "图片中没有 ZIP"
+
+    make_tmp
+
+    zipfile="$TMPDIR_IMGZIP/container.zip"
+
+    extract_zip_part "$image" "$zipfile"
+
+    unzip -t "$zipfile" >/dev/null 2>&1 ||
+        die "ZIP 数据损坏"
+
+    mkdir -p "$output" ||
+        die "无法创建输出目录"
+
+    unzip -q "$zipfile" -d "$output" ||
+        die "解压失败"
+
+    info "解压完成：$output"
+}
+
+# ------------------------------------------------------------
+# LIST
+# ------------------------------------------------------------
+
+cmd_list() {
+    [ "$#" -eq 1 ] ||
+        die "用法：imgzip list <图片>"
+
+    image="$1"
+
+    [ -f "$image" ] ||
+        die "找不到文件：$image"
+
+    image_type="$(detect_image "$image")"
+    total="$(file_size "$image")"
+
+    printf '\n'
+    printf '%s\n' '========== imgzip =========='
+    printf '文件：      %s\n' "$image"
+    printf '类型：      %s\n' "$image_type"
+    printf '总大小：    %s bytes\n' "$total"
+
+    if ! has_zip "$image"; then
+        printf 'ZIP：       无\n'
+        printf '%s\n' '============================'
+        return
+    fi
+
+    zip_start="$(get_zip_start "$image")"
+
+    printf '图片大小：  %s bytes\n' "$zip_start"
+    printf 'ZIP 大小：   %s bytes\n' "$((total - zip_start))"
+    printf '\n'
+    printf '%s\n' 'ZIP 内容：'
+    printf '%s\n' '----------------------------'
+
+    make_tmp
+
+    zipfile="$TMPDIR_IMGZIP/list.zip"
+    extract_zip_part "$image" "$zipfile"
+
+    unzip -l "$zipfile"
+
+    printf '%s\n' '============================'
+}
+
+# ------------------------------------------------------------
+# SIGN
+# ------------------------------------------------------------
+
+cmd_sign() {
+    [ "$#" -ge 2 ] ||
+        die '用法：imgzip sign <图片> "签名内容"'
+
+    image="$1"
+    shift
+
+    signer="$*"
+
+    [ -f "$image" ] ||
+        die "找不到文件：$image"
+
+    make_tmp
+
+    if has_zip "$image"; then
+        extract_image_part "$image" "$TMPDIR_IMGZIP/image.bin"
+        extract_zip_part "$image" "$TMPDIR_IMGZIP/old.zip"
+
+        unzip -q "$TMPDIR_IMGZIP/old.zip" \
+            -d "$TMPDIR_IMGZIP/work" ||
+            die "解压 ZIP 失败"
+    else
+        cp "$image" "$TMPDIR_IMGZIP/image.bin"
+        mkdir -p "$TMPDIR_IMGZIP/work"
+    fi
+
+    hash="$(sha256_file "$TMPDIR_IMGZIP/image.bin")"
+    size="$(file_size "$TMPDIR_IMGZIP/image.bin")"
+    date="$(date '+%Y-%m-%d %H:%M:%S %z')"
+
+    mkdir -p "$TMPDIR_IMGZIP/work/__IMGZIP__"
+
+    cat > "$TMPDIR_IMGZIP/work/__IMGZIP__/SIGNATURE.txt" <<EOF
+IMGZIP SIGNATURE
+================
+Signer: $signer
+Created: $date
+Image SHA256: $hash
+Image Size: $size
+IMGZIP Version: $VERSION
+EOF
+
+    new_zip="$TMPDIR_IMGZIP/new.zip"
+
+    (
+        cd "$TMPDIR_IMGZIP/work" || exit 1
+        zip -q -r "$new_zip" .
+    ) || die "生成签名 ZIP 失败"
+
+    cat \
+        "$TMPDIR_IMGZIP/image.bin" \
+        "$new_zip" \
+        > "$image.imgzip.tmp" ||
+        die "写入签名失败"
+
+    mv "$image.imgzip.tmp" "$image" ||
+        die "更新文件失败"
+
+    info "签名写入完成"
+    info "Signer：$signer"
+    info "Image SHA256：$hash"
+}
+
+# ------------------------------------------------------------
+# VERIFY
+# ------------------------------------------------------------
+
+cmd_verify() {
+    [ "$#" -eq 1 ] ||
+        die "用法：imgzip verify <图片>"
+
+    image="$1"
+
+    [ -f "$image" ] ||
+        die "找不到文件：$image"
+
+    has_zip "$image" ||
+        die "图片中没有 ZIP"
+
+    make_tmp
+
+    extract_image_part "$image" "$TMPDIR_IMGZIP/image.bin"
+    extract_zip_part "$image" "$TMPDIR_IMGZIP/container.zip"
+
+    unzip -p \
+        "$TMPDIR_IMGZIP/container.zip" \
+        "__IMGZIP__/SIGNATURE.txt" \
+        > "$TMPDIR_IMGZIP/signature.txt" 2>/dev/null ||
+        die "没有找到签名文件"
+
+    expected="$(
+        grep '^Image SHA256:' \
+        "$TMPDIR_IMGZIP/signature.txt" |
+        head -n 1 |
+        sed 's/^Image SHA256:[[:space:]]*//'
+    )"
+
+    [ -n "$expected" ] ||
+        die "签名文件中没有 SHA256"
+
+    actual="$(sha256_file "$TMPDIR_IMGZIP/image.bin")"
+
+    printf '\n'
+    printf '%s\n' '======= IMGZIP VERIFY ======='
+    printf '签名 SHA256：%s\n' "$expected"
+    printf '当前 SHA256：%s\n' "$actual"
+
+    if [ "$expected" = "$actual" ]; then
+        printf '%s结果：PASS%s\n' "$C_GREEN" "$C_RESET"
+        printf '图片部分没有发生变化。\n'
+        printf '%s\n' '============================='
+        return 0
+    fi
+
+    printf '%s结果：FAIL%s\n' "$C_RED" "$C_RESET"
+    printf '图片部分已经发生变化。\n'
+    printf '%s\n' '============================='
+
+    return 3
+}
+
+# ------------------------------------------------------------
+# HELP
+# ------------------------------------------------------------
+
+cmd_help() {
+    cat <<'EOF'
+
+imgzip - 图片 + ZIP 容器工具
+==============================================
+
+用法：
+
+  imgzip <命令> [参数...]
+
+命令：
+
+  pack
+      创建图片 ZIP 容器。
+
+      imgzip pack <图片> <文件...>
+
+      示例：
+        imgzip pack photo.jpg hello.txt test.pdf
+
+
+  add
+      添加文件。
+
+      imgzip add <图片> <文件...>
+
+      同名文件会被替换。
+
+
+  update
+      更新文件。
+
+      imgzip update <图片> <文件...>
+
+      如果文件不存在，会自动添加。
+
+
+  delete
+      删除文件。
+
+      imgzip delete <图片> <文件...>
+
+
+  extract
+      提取隐藏 ZIP。
+
+      imgzip extract <图片> [输出目录]
+
+      示例：
+        imgzip extract photo.jpg files/
+
+
+  list
+      查看隐藏 ZIP 内容。
+
+      imgzip list <图片>
+
+
+  sign
+      写入图片完整性签名。
+
+      imgzip sign <图片> "签名内容"
+
+      签名文件：
+
+        __IMGZIP__/SIGNATURE.txt
+
+
+  verify
+      验证图片部分是否发生变化。
+
+      imgzip verify <图片>
+
+
+  --version
+      显示版本。
+
+
+  --help
+      显示本帮助。
+
+
+工作原理：
+
+  ┌─────────────────────────────┐
+  │ 原始 JPEG / PNG              │
+  │                             │
+  │  完全保持原始二进制          │
+  ├─────────────────────────────┤
+  │ 标准 ZIP                    │
+  │                             │
+  │  file.txt                   │
+  │  image.png                  │
+  │  __IMGZIP__/SIGNATURE.txt   │
+  └─────────────────────────────┘
+
+
+重要：
+
+  imgzip 不重新编码图片。
+
+  修改文件时不会继续：
+
+    JPG + ZIP + ZIP + ZIP
+
+  而是重新生成：
+
+    JPG + 新 ZIP
+
+
+MT Manager：
+
+  ZIP 部分使用标准 ZIP 格式。
+
+  可以将生成的 .jpg 复制一份：
+
+    photo.jpg
+          ↓
+    photo.zip
+
+  然后使用 MT Manager 打开并编辑。
+
+
+完整性：
+
+  sign 保存的是：
+
+    原始图片部分 SHA-256
+
+  verify 只验证图片部分。
+
+  所以：
+
+    修改 ZIP → 不影响图片验证
+    修改图片 → verify FAIL
+
+
+示例：
+
+  imgzip pack photo.jpg hello.txt
+
+  imgzip list photo.jpg
+
+  imgzip add photo.jpg test.pdf
+
+  imgzip update photo.jpg hello.txt
+
+  imgzip delete photo.jpg test.pdf
+
+  imgzip sign photo.jpg "Mbilse"
+
+  imgzip verify photo.jpg
+
+  imgzip extract photo.jpg output/
+
+
+版本：
+
+  imgzip 1.0.0
+
+==============================================
+
+EOF
+}
+
+# ------------------------------------------------------------
+# VERSION
+# ------------------------------------------------------------
+
+cmd_version() {
+    printf '%s %s\n' "$PROG" "$VERSION"
+}
+
+# ------------------------------------------------------------
+# MAIN
+# ------------------------------------------------------------
+
+main() {
+
+    check_dependencies
+
+    if [ "$#" -eq 0 ]; then
+        cmd_help
+        exit 0
+    fi
+
+    command="$1"
+    shift
+
+    case "$command" in
+
+        pack)
+            cmd_pack "$@"
+            ;;
+
+        add)
+            cmd_add_update add "$@"
+            ;;
+
+        update)
+            cmd_add_update update "$@"
+            ;;
+
+        delete)
+            cmd_delete "$@"
+            ;;
+
+        extract)
+            cmd_extract "$@"
+            ;;
+
+        sign)
+            cmd_sign "$@"
+            ;;
+
+        verify)
+            cmd_verify "$@"
+            ;;
+
+        list)
+            cmd_list "$@"
+            ;;
+
+        --version|-v|version)
+            cmd_version
+            ;;
+
+        
+        --help|-h|help)
+            cmd_help
+            ;;
+
+        *)
+            error "未知命令：$command"
+            printf '使用 imgzip --help 查看帮助。\n'
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
