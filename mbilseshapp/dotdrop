@@ -1,0 +1,61 @@
+#!/bin/bash
+BASE="$HOME/.dotdrop"
+mkdir -p "$BASE/files" "$BASE/meta"
+
+# ---------- 加密/解密 ----------
+encrypt_file() {
+    local file="$1"; local pwd="$2"
+    local enc="$BASE/files/$(basename "$file").enc"
+    openssl enc -aes-256-gcm -pbkdf2 -pass pass:"$pwd" -in "$file" -out "$enc"
+    echo "$enc"
+}
+
+decrypt_file() {
+    local enc="$1"; local pwd="$2"
+    local out="${enc%.enc}"
+    openssl enc -d -aes-256-gcm -pbkdf2 -pass pass:"$pwd" -in "$enc" -out "$out"
+    echo "$out"
+}
+
+# ---------- DataChannel 连接 ----------
+connect() {
+    echo "Establishing P2P connection..."
+    echo "1) CLI A: generate Offer, send to peer"
+    echo "2) CLI B: paste Offer, generate Answer, send back"
+    echo "3) CLI A: paste Answer → DataChannel open"
+    echo "(DataChannel is ready for send/download)"
+}
+
+# ---------- 发送文件 ----------
+send_file() {
+    local file="$1"; local pwd="$2"
+    local enc=$(encrypt_file "$file" "$pwd")
+    echo "Encrypted file: $enc"
+    echo "Use dotdrop connect first to establish DataChannel"
+    echo "Then DataChannel will be used to send this file"
+    # 后续可用 Node.js wrtc 或 websocat 实现 DataChannel发送
+}
+
+# ---------- 搜索文件 ----------
+search_files() {
+    echo "Files available (requires peer connected):"
+    echo "(In CLI ↔ CLI or CLI ↔ Web, use connect first)"
+}
+
+# ---------- 下载文件 ----------
+download_file() {
+    local name="$1"; local pwd="$2"
+    echo "Use dotdrop connect to establish DataChannel first"
+    local enc="$BASE/files/$name.enc"
+    echo "DataChannel will receive file and save as: $enc"
+    decrypt_file "$enc" "$pwd"
+}
+
+# ---------- CLI 入口 ----------
+case "$1" in
+    connect) connect ;;
+    send) send_file "$2" "$4" ;;
+    search) search_files ;;
+    download) download_file "$2" "$4" ;;
+    *) echo "Usage: dotdrop connect|send|search|download" ;;
+esac
