@@ -41,6 +41,9 @@ case "$cont" in
     echo "MSH要被安装..."
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/msh > $PREFIX/bin/msh
     chmod +x $PREFIX/bin/msh
+    echo "dater要被安装..."
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/dater > $PREFIX/bin/dater
+    chmod +x $PREFIX/bin/dater
 
     echo "OKay."
   ;;
