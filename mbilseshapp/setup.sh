@@ -47,6 +47,9 @@ case "$cont" in
     echo "DotDrop要被安装..."
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/dotdrop > $PREFIX/bin/dotdrop
     chmod +x $PREFIX/bin/dotdrop
+    echo "SecTrans要被安装..."
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/sectrans > $PREFIX/bin/sectrans
+    chmod +x $PREFIX/bin/sectrans
 
     echo "All OKay."
   ;;
