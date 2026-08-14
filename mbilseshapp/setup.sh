@@ -50,7 +50,10 @@ case "$cont" in
     echo "SecTrans要被安装..."
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/sectrans > $PREFIX/bin/sectrans
     chmod +x $PREFIX/bin/sectrans
-
+    echo "MbilseApps要被安装..."
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/mbilseapps > $PREFIX/bin/mbilseapps
+    chmod +x $PREFIX/bin/mbilseapps
+    
     echo "All OKay."
   ;;
   n|N|no|NO|"")
