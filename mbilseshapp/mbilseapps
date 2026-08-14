@@ -1,0 +1,41 @@
+#!/bin/bash
+# mbilseapps - 极简多应用管理工具
+
+VERSION="1.0.0"
+
+case "$1" in
+    all-pkg-install)
+        echo "安装所有依赖包..."
+        
+        apt install curl wget git vim htop whiptail gh python c-script 
+        echo "依赖包安装完成。"
+        ;;
+    all-mcli-install)
+        curl -fsSL https://mbilseserv.github.io/mbilseshapp/setup.sh | sh
+        echo "所有 CLI 安装完成。"
+        ;;
+    update-this)
+        curl -fsSL https://mbilseserv.github.io/mbilseshapp/mbilseapps > $PREFIX/bin/mbilseapps
+    chmod +x $PREFIX/bin/mbilseapps
+        ;;
+    -v|--version)
+        echo "mbilseapps version $VERSION"
+        ;;
+    -h|--help|"")
+        cat <<EOF
+用法: mbilseapps <子命令>
+
+子命令:
+  all-pkg-install      安装所有依赖包 (apt)
+  all-mcli-install     安装所有 CLI 工具 (5个)
+  update-this          通过 curl 更新自身脚本
+  -v, --version        显示版本信息
+  -h, --help           显示此帮助信息
+EOF
+        ;;
+    *)
+        echo "错误：未知子命令 '$1'"
+        echo "使用 -h 查看帮助。"
+        exit 1
+        ;;
+esac
