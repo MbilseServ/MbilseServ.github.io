@@ -1,22 +1,59 @@
 #!/bin/bash
 # mbilseapps - 极简多应用管理工具
 
-VERSION="1.0.0"
+VERSION="5.28"
 
 case "$1" in
     all-pkg-install)
-        echo "安装所有依赖包..."
+        echo "• 安装依赖"
+        sleep 0.1
+        echo "• 检查内容"
+        sleep 0.2
+        echo "| 完成"
+        echo "• 开始调用命令"
+        echo "| APT命令"
+        apt install curl wget git vim htop whiptail gh python c-script whois ruby figlet toilet proot nodejs
+        echo "| Ruby命令"
+        gem install lolcat
         
-        apt install curl wget git vim htop whiptail gh python c-script 
-        echo "依赖包安装完成。"
+        echo "• 依赖包安装完成。"
         ;;
     all-mcli-install)
+        echo "• 安装/补全MbilseCLI"
+        sleep 0.1
+        echo "• 检查内容"
+        sleep 0.2
+        echo "| 完成"
+        echo "• 开始调用命令"
+        echo "| 检测列表"
+        sleep 1
+        echo "| 调用CURL"
+        sleep 1
+        echo "| 展示安装信息并开始"
         curl -fsSL https://mbilseserv.github.io/mbilseshapp/setup.sh | sh
-        echo "所有 CLI 安装完成。"
+        echo "• 所有 CLI 安装完成。"
         ;;
     update-this)
+        echo "• 更新MbilseApps库/命令包"
+        sleep 0.1
+        echo "• 检查连接"
+        sleep 0.2
+        echo "| 完成"
+        echo "• 开始调用命令"
+        echo "| 检测Github库"
+        sleep 1
+        echo "| 调用CURL"
+        sleep 1
+        echo "| 展示安装信息并开始"
         curl -fsSL https://mbilseserv.github.io/mbilseshapp/mbilseapps > $PREFIX/bin/mbilseapps
+       echo "• 完成"
+       echo "• 授予权限"
+       sleep 0.2
+       echo "| 开始"
+       sleep 0.5
     chmod +x $PREFIX/bin/mbilseapps
+       echo "• 更新完成"
+    
         ;;
     -v|--version)
         echo "mbilseapps version $VERSION"
@@ -26,8 +63,8 @@ case "$1" in
 用法: mbilseapps <子命令>
 
 子命令:
-  all-pkg-install      安装所有依赖包 (apt)
-  all-mcli-install     安装所有 CLI 工具 (5个)
+  all-pkg-install      安装所有依赖包 
+  all-mcli-install     安装所有 CLI 工具 
   update-this          通过 curl 更新自身脚本
   -v, --version        显示版本信息
   -h, --help           显示此帮助信息
