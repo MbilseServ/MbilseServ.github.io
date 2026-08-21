@@ -12,7 +12,7 @@ case "$1" in
         echo "| 完成"
         echo "• 开始调用命令"
         echo "| APT命令"
-        apt install curl wget git vim htop whiptail gh python c-script whois ruby figlet toilet proot nodejs
+        apt install curl wget git vim htop whiptail gh python c-script whois ruby figlet toilet proot nodejs python3 gtk3 clang pkg-config termux-x11-nightly x11-repos gtkdialog git-gui git-gitk coreutils zip unzip gawk
         echo "| Ruby命令"
         gem install lolcat
         
