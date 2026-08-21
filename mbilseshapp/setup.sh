@@ -35,6 +35,11 @@ case "$cont" in
     echo "WebDrop要被安装..."
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/webdrop > $PREFIX/bin/webdrop
     chmod +x $PREFIX/bin/webdrop
+    echo "WebDrop-GTK要被安装..."
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/webdrop-gtk > $PREFIX/bin/webdrop-gtk
+    chmod +x $PREFIX/bin/webdrop-gtk
+    echo "Webdrop-gtk的链接要被设置..."
+    ln -s $PREFIX/bin/webdrop-gtk $PREFIX/bin/webdropk
     echo "软件包管理MLE要被安装..."
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/mle > $PREFIX/bin/mle
     chmod +x $PREFIX/bin/mle
