@@ -1,0 +1,69 @@
+#!/bin/sh
+
+ppid=$PPID
+name=""
+cmdline=""
+
+# 先读取完整的 cmdline（整个参数列表，用空格拼接）
+if [ -r "/proc/$ppid/cmdline" ]; then
+    cmdline=$(tr '\0' ' ' < "/proc/$ppid/cmdline" 2>/dev/null)
+fi
+
+# 从 cmdline 中提取第一个参数（即 argv[0]）
+if [ -n "$cmdline" ]; then
+    arg0=$(echo "$cmdline" | awk '{print $1}')
+    [ -n "$arg0" ] && name=$(basename "$arg0")
+fi
+
+# 如果没读到，尝试 exe 软链接
+if [ -z "$name" ] && [ -L "/proc/$ppid/exe" ]; then
+    exe=$(readlink "/proc/$ppid/exe" 2>/dev/null)
+    [ -n "$exe" ] && name=$(basename "$exe")
+fi
+
+# 最后的备选
+if [ -z "$name" ]; then
+    name=$(ps -p $ppid -o comm= 2>/dev/null)
+fi
+
+# ----- 特殊检测：即使 name 是 bash，只要 cmdline 里有 msh 就优先识别为 msh -----
+if echo "$cmdline" | grep -q "\bmsh\b"; then
+    name="msh"
+fi
+
+# ----- 匹配输出（将 msh 放在最前面，确保优先） -----
+case "$name" in
+    msh)
+        echo "Mbilse MSH"
+        ;;
+    ash)
+        echo "BusyBox Ash/Dash"
+        ;;
+    bash)
+        echo "Bash"
+        ;;
+    zsh)
+        echo "Zsh"
+        ;;
+    fish)
+        echo "FISH"
+        ;;
+    sh)
+        # 对 sh 做二次判断
+        if echo "$cmdline" | grep -q "bash"; then
+            echo "Bash"
+        elif echo "$cmdline" | grep -q "dash"; then
+            echo "Shell"
+        else
+            echo "Shell"
+        fi
+        ;;
+    *)
+        # 兜底：检查 cmdline 中是否包含其他已知名
+        if echo "$cmdline" | grep -q "ash"; then
+            echo "BusyBox Ash/Dash"
+        else
+            echo "Shell"
+        fi
+        ;;
+esac
