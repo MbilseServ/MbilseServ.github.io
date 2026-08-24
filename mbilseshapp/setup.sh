@@ -32,6 +32,9 @@ case "$cont" in
     echo "setup.sh要被安装..."
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/setup.sh > $PREFIX/bin/setup.sh
     chmod +x $PREFIX/bin/setup.sh
+    echo "SecTrans-Dr-GTK要被安装..."
+    curl -fsSL https://mbilseserv.github.io/mbilseshapp/sectrans-dr-gtk > $PREFIX/bin/sectrans-dr-gtk
+    chmod +x $PREFIX/bin/sectrans-dr-gtk
     echo "whoareyou要被安装..."
     curl -fsSL https://mbilseserv.github.io/mbilseshapp/whoareyou > $PREFIX/bin/whoareyou
     echo "whoareyou的链接要被设置..."
